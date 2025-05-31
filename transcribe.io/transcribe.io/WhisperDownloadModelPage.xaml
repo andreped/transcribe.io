@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:xct="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
+             xmlns:local="clr-namespace:transcribe.io"
+             xmlns:vm="clr-namespace:transcribe.io.ViewModels"
+             xmlns:ios="clr-namespace:Microsoft.Maui.Controls.PlatformConfiguration.iOSSpecific;assembly=Microsoft.Maui.Controls"
+             ios:Page.ModalPresentationStyle="FormSheet"
+             x:Class="transcribe.io.WhisperDownloadModelPage">
+    <ContentPage.Content>
+        <xct:VirtualListView Adapter="{Binding SectionedDownloads}">
+            <xct:VirtualListView.SectionHeaderTemplate>
+                <DataTemplate>
+                    <xct:VirtualViewCell>
+                        <Grid Margin="5">
+                            <Label FontAttributes="Bold" Text="{Binding Type, Converter={StaticResource GgmlTypeConverter}}"/>
+                        </Grid>
+                    </xct:VirtualViewCell>
+                </DataTemplate>
+            </xct:VirtualListView.SectionHeaderTemplate>
+            <xct:VirtualListView.ItemTemplate>
+                <DataTemplate>
+                    <xct:VirtualViewCell>
+                        <Border
+                            Margin="5"
+                            Stroke="{AppThemeBinding Light=Black, Dark=White}"
+                            Background="Transparent"
+                            StrokeThickness="1"
+                            StrokeShape="RoundRectangle 5"
+                            >
+                            <Grid Margin="15" ColumnSpacing="5" ColumnDefinitions="*, *, Auto">
+                                <Grid Margin="5" RowSpacing="5" RowDefinitions="Auto, Auto">
+                                    <Label FontAttributes="Bold" Text="{Binding Model.Name}" />
+                                    <Label Grid.Row="1" FontSize="Caption" Text="{Binding Model.Description}" />
+                                </Grid>
+                                <ProgressBar IsVisible="{Binding DownloadStarted}" Progress="{Binding Precent}" Grid.Column="1" VerticalOptions="Center" />
+                                <Button MinimumWidthRequest="100" IsVisible="{Binding ShowDownloadButton}"  VerticalOptions="Center" Grid.Column="2" Text="Download" BackgroundColor="#007AFF" TextColor="White" Command="{Binding DownloadCommand}"/>
+                                <Button MinimumWidthRequest="100" IsVisible="{Binding ShowCancelButton}" VerticalOptions="Center" Grid.Column="2" Text="Cancel" BackgroundColor="#FF3B30" TextColor="White"  Command="{Binding CancelCommand}"/>
+                                <Button MinimumWidthRequest="100" IsVisible="{Binding ShowDeleteButton}" VerticalOptions="Center" Grid.Column="2" Text="Delete" BackgroundColor="#FF3B30" TextColor="White"  Command="{Binding DeleteCommand}"/>
+                            </Grid>
+                        </Border>
+                    </xct:VirtualViewCell>
+                </DataTemplate>
+            </xct:VirtualListView.ItemTemplate>
+            <xct:VirtualListView.GlobalHeader>
+                <Grid>
+                    <Button Margin="25" Clicked="CloseModal" Text="Close"/>
+                </Grid>
+            </xct:VirtualListView.GlobalHeader>
+            <xct:VirtualListView.GlobalFooter>
+                <Grid>
+                    <Button Margin="25" Clicked="CloseModal" Text="Close"/>
+                </Grid>
+            </xct:VirtualListView.GlobalFooter>
+        </xct:VirtualListView>
+    </ContentPage.Content>
+</ContentPage>

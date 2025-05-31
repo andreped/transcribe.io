@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<root>
+    <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+                xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+        <xsd:element name="root" msdata:IsDataSet="true">
+
+        </xsd:element>
+    </xsd:schema>
+    <resheader name="resmimetype">
+        <value>text/microsoft-resx</value>
+    </resheader>
+    <resheader name="version">
+        <value>1.3</value>
+    </resheader>
+    <resheader name="reader">
+        <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <resheader name="writer">
+        <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral,
+            PublicKeyToken=b77a5c561934e089
+        </value>
+    </resheader>
+    <data name="AppTitle" xml:space="preserve">
+    <value>App Title</value>
+  </data>
+    <data name="CancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+    <data name="CaptureStatus" xml:space="preserve">
+    <value>Capture Status</value>
+  </data>
+    <data name="CloseButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
+    <data name="ConvertingAudio" xml:space="preserve">
+    <value>Encoding Audio to 16000Hz</value>
+  </data>
+    <data name="DeleteButton" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+    <data name="DownloadButtonLabel" xml:space="preserve">
+    <value>Download</value>
+  </data>
+    <data name="DownloadingYoutubeVideo" xml:space="preserve">
+    <value>Downloading YouTube Video</value>
+  </data>
+    <data name="EnglishOnlyLabel" xml:space="preserve">
+    <value>English Only</value>
+  </data>
+    <data name="FFMpegMissingError" xml:space="preserve">
+    <value>Could not find ffmpeg. In order to run Drastic.Whisper, please install ffmpeg first.</value>
+  </data>
+    <data name="FileExamplePlaceholder" xml:space="preserve">
+    <value>File Path, URL...</value>
+  </data>
+    <data name="FileMissingError" xml:space="preserve">
+    <value>Could not find file.</value>
+  </data>
+    <data name="GenerateSubtitlesButton" xml:space="preserve">
+    <value>Generate Subtitles</value>
+  </data>
+    <data name="GeneratingSubtitles" xml:space="preserve">
+    <value>Generating Subtitles...</value>
+  </data>
+    <data name="LanguageAuto" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+    <data name="LanguageLabel" xml:space="preserve">
+    <value>Language</value>
+  </data>
+    <data name="Listening" xml:space="preserve">
+    <value>Listening...</value>
+  </data>
+    <data name="ModelMissingError" xml:space="preserve">
+    <value>Could not find model.</value>
+  </data>
+    <data name="ModelTextLabel" xml:space="preserve">
+    <value>Model</value>
+  </data>
+    <data name="MultipleLanguagesLabel" xml:space="preserve">
+    <value>Multi-Language</value>
+  </data>
+    <data name="NoAudioStreams" xml:space="preserve">
+    <value>No Audio Streams</value>
+  </data>
+    <data name="OpenFileButton" xml:space="preserve">
+    <value>Open File</value>
+  </data>
+    <data name="OpenModelButton" xml:space="preserve">
+    <value>Open Model</value>
+  </data>
+    <data name="PathTextLabel" xml:space="preserve">
+    <value>File</value>
+  </data>
+    <data name="Stalled" xml:space="preserve">
+    <value>Stalled</value>
+  </data>
+    <data name="TranscodeFiledError" xml:space="preserve">
+    <value>Could not transcode file.</value>
+  </data>
+    <data name="TranscribeButtonLabel" xml:space="preserve">
+    <value>Transcribe</value>
+  </data>
+    <data name="Transcribing" xml:space="preserve">
+    <value>Transcribing...</value>
+  </data>
+    <data name="WhisperModelHeader" xml:space="preserve">
+    <value>Whisper Model</value>
+  </data>
+</root>
