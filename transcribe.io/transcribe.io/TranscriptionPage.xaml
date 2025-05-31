@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:common="clr-namespace:transcribe.io.Translations"
+             xmlns:xct="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
+             x:Class="transcribe.io.TranscriptionPage">
+    <ContentPage.Content>
+        <Grid Margin="15"
+              RowSpacing="5"
+              RowDefinitions="Auto, Auto, *">
+            <Grid Grid.Row="0" RowDefinitions="Auto, Auto, Auto" RowSpacing="5">
+                <Grid ColumnSpacing="5" Grid.Row="0" ColumnDefinitions="50, *, Auto, Auto">
+                    <Label VerticalOptions="Center" Text="{x:Static common:Common.ModelTextLabel}" />
+                    <Entry Placeholder="Select a model..." HorizontalOptions="Fill" Grid.Column="1" IsEnabled="False" Text="{Binding  ModelService.SelectedModel.FileLocation}" />
+                </Grid>
+                <Grid ColumnSpacing="5" Grid.ColumnDefinitions="*, Auto, Auto" Grid.Row="1">
+                    <Picker MinimumWidthRequest="200" Grid.Column="1" HorizontalOptions="End" VerticalOptions="Center" ItemsSource="{Binding ModelService.AvailableModels}" SelectedItem="{Binding ModelService.SelectedModel, Mode=TwoWay}" ItemDisplayBinding="{Binding Name}"/>
+                    <Button Grid.Column="2" HorizontalOptions="End" Text="Download Model" Clicked="OnDownloadModelClicked" />
+                </Grid>
+                <Grid ColumnSpacing="5" Grid.Row="2" ColumnDefinitions="50, *, Auto">
+                    <Label VerticalOptions="Center" Text="{x:Static common:Common.PathTextLabel}" />
+                    <Entry HorizontalOptions="Fill" Grid.Column="1" Placeholder="{x:Static common:Common.FileExamplePlaceholder}" Text="{Binding UrlField, Mode=TwoWay}" />
+                    <Button Grid.Column="2" Text="{x:Static common:Common.OpenFileButton}" Clicked="OpenFileButtonClicked" />
+                </Grid>
+            </Grid>
+            <Grid Grid.Row="1" RowDefinitions="*" RowSpacing="5">
+                <Button Text="Start" Command="{Binding StartCommand}" />
+            </Grid>
+            <xct:VirtualListView Background="Transparent" Grid.Row="2" Adapter="{Binding Subtitles}">
+                <xct:VirtualListView.ItemTemplate>
+                    <DataTemplate>
+                        <xct:VirtualViewCell>
+                            <Border
+                                Margin="5"
+                                Stroke="{AppThemeBinding Light=Black, Dark=White}"
+                                Background="Transparent"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 5"
+                            >
+                                <Grid Margin="25" RowSpacing="2" RowDefinitions="*, Auto">
+                                    <Label FontAttributes="Bold" Text="{Binding Text}" />
+                                    <Label FontSize="Caption" Grid.Row="1" Text="{Binding Time}" />
+                                </Grid>
+                            </Border>
+                        </xct:VirtualViewCell>
+                    </DataTemplate>
+                </xct:VirtualListView.ItemTemplate>
+                <xct:VirtualListView.EmptyView>
+                    <Border StrokeThickness="1"
+                            BackgroundColor="#eb233d"
+                            Stroke="{AppThemeBinding Light=Black, Dark=White}"
+                            StrokeShape="RoundRectangle 5">
+                        <Image 
+                            Aspect="AspectFit"
+                            Source="logo.png"/>
+                    </Border>
+                </xct:VirtualListView.EmptyView>
+            </xct:VirtualListView>
+        </Grid>
+    </ContentPage.Content>
+</ContentPage>
