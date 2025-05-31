@@ -27,7 +27,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<IErrorHandlerService, DebugErrorHandler>();
         builder.Services.AddSingleton<IWhisperService, DefaultWhisperService>();
 #if IOS
-        builder.Services.AddSingleton<IMicrophoneService, IMicrophoneService_iOS>();
+        builder.Services.AddSingleton<IMicrophoneService, MicrophoneService_iOS>();
 #endif
 #if IOS || ANDROID
         builder.Services.AddSingleton<ITranscodeService, VlcTranscodeService>();
