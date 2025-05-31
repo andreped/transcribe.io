@@ -213,9 +213,9 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
     }
 
     // --- Update: accumulate live transcription text ---
-    // Accumulate all unique segments by start time
+    // Maintain a list of committed segments
     private readonly List<WhisperSegmentData> allSegments = new();
-    private TimeSpan windowSize = TimeSpan.FromSeconds(10);
+    private TimeSpan committedUntil = TimeSpan.Zero;
     
     private void OnNewWhisperSegment(object? sender, OnNewSegmentEventArgs segment)
     {
@@ -223,29 +223,36 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
         if (string.IsNullOrWhiteSpace(e.Text))
             return;
     
-        // Replace or add segment by start time
-        var existing = allSegments.FindIndex(s => s.Start == e.Start);
-        if (existing >= 0)
-            allSegments[existing] = e;
+        // Add or update segment in buffer
+        var idx = allSegments.FindIndex(s => s.Start == e.Start && s.End == e.End);
+        if (idx >= 0)
+            allSegments[idx] = e;
         else
             allSegments.Add(e);
     
-        // Determine window split
-        var latestEnd = allSegments.Max(s => s.End);
-        var windowStart = latestEnd - windowSize;
+        // Order segments by start time
+        var ordered = allSegments.OrderBy(s => s.Start).ToList();
     
-        var fixedSegments = allSegments.Where(s => s.End <= windowStart).OrderBy(s => s.Start);
-        var liveSegments = allSegments.Where(s => s.End > windowStart).OrderBy(s => s.Start);
+        // Commit all finalized segments (all except the last one)
+        var finalized = ordered.Take(ordered.Count - 1)
+            .Where(s => s.End > committedUntil && s.Start >= committedUntil)
+            .ToList();
     
-        string fixedText = string.Join(" ", fixedSegments.Select(s => s.Text.Trim()));
-        string liveText = string.Join(" ", liveSegments.Select(s => s.Text.Trim()));
+        if (finalized.Count > 0)
+            committedUntil = finalized.Max(s => s.End);
+    
+        // Build the live feed: committed text + current hypothesis
+        var committedText = string.Join(" ", ordered.Where(s => s.End <= committedUntil).Select(s => s.Text.Trim()));
+        var hypothesisText = string.Join(" ", ordered.Where(s => s.End > committedUntil).Select(s => s.Text.Trim()));
+        var liveText = string.IsNullOrEmpty(committedText) ? hypothesisText : $"{committedText} {hypothesisText}";
     
         this.Dispatcher.Dispatch(() =>
         {
-            LiveTranscriptionText = string.IsNullOrEmpty(fixedText)
-                ? liveText
-                : fixedText + " " + liveText;
+            LiveTranscriptionText = liveText;
         });
+    
+        // Trim old segments
+        allSegments.RemoveAll(s => s.End <= committedUntil - TimeSpan.FromSeconds(30));
     }
 
     private void ModelServiceOnUpdatedSelectedModel(object? sender, EventArgs e)
