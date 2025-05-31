@@ -1,11 +1,10 @@
-﻿// <copyright file="MauiProgram.cs" company="Drastic Actions">
-// Copyright (c) Drastic Actions. All rights reserved.
-// </copyright>
-
-using Drastic.Services;
+﻿using Drastic.Services;
 using transcribe.io.Services;
 using transcribe.io.ViewModels;
 using Microsoft.Extensions.Logging;
+#if IOS
+using transcribe.io.Platforms.iOS;
+#endif
 
 namespace transcribe.io;
 
@@ -27,8 +26,11 @@ public static class MauiProgram
         builder.Services.AddSingleton<IAppDispatcher, MauiAppDispatcher>();
         builder.Services.AddSingleton<IErrorHandlerService, DebugErrorHandler>();
         builder.Services.AddSingleton<IWhisperService, DefaultWhisperService>();
+#if IOS
+        builder.Services.AddSingleton<IMicrophoneService, IMicrophoneService_iOS>();
+#endif
 #if IOS || ANDROID
-		builder.Services.AddSingleton<ITranscodeService, VlcTranscodeService>();
+        builder.Services.AddSingleton<ITranscodeService, VlcTranscodeService>();
 #else
         builder.Services.AddSingleton<ITranscodeService, FFMpegTranscodeService>();
 #endif
@@ -42,8 +44,8 @@ public static class MauiProgram
             .ConfigureFonts(fonts =>
             {
 #if ANDROID || WINDOWS
-				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+                fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+                fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
 #endif
             });
 

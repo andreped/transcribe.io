@@ -1,7 +1,3 @@
-// <copyright file="DefaultWhisperService.cs" company="Drastic Actions">
-// Copyright (c) Drastic Actions. All rights reserved.
-// </copyright>
-
 using transcribe.io.Models;
 using Whisper.net;
 
@@ -15,6 +11,8 @@ public class DefaultWhisperService : IWhisperService, IDisposable
     private WhisperFactory? factory;
     private WhisperProcessor? processor;
     private List<float[]> slidingBuffer = new(TotalBufferLength + 1);
+
+    private bool isLiveTranscriptionActive = false;
 
     /// <inheritdoc/>
     public event EventHandler<OnNewSegmentEventArgs>? OnNewWhisperSegment;
@@ -103,6 +101,31 @@ public class DefaultWhisperService : IWhisperService, IDisposable
             this.processor.Process(this.slidingBuffer.SelectMany(x => x).ToArray());
         }
 
+        return Task.CompletedTask;
+    }
+
+    // --- Live transcription methods ---
+
+    public Task StartLiveTranscriptionAsync(WhisperLanguage language, CancellationToken? cancellationToken = default)
+    {
+        // You may want to load/init the model here if not already done
+        // This is a stub; actual implementation may depend on your app's flow
+        this.isLiveTranscriptionActive = true;
+        return Task.CompletedTask;
+    }
+
+    public Task ProcessAudioBufferAsync(byte[] buffer, CancellationToken? cancellationToken = default)
+    {
+        // Forward to ProcessBytes for now
+        if (!this.isLiveTranscriptionActive)
+            return Task.CompletedTask;
+
+        return this.ProcessBytes(buffer, cancellationToken);
+    }
+
+    public Task StopLiveTranscriptionAsync()
+    {
+        this.isLiveTranscriptionActive = false;
         return Task.CompletedTask;
     }
 

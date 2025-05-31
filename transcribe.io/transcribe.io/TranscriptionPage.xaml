@@ -3,12 +3,18 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:common="clr-namespace:transcribe.io.Translations"
-             xmlns:xct="clr-namespace:Microsoft.Maui.Controls;assembly=VirtualListView"
+             xmlns:converters="clr-namespace:transcribe.io.Converters"
              x:Class="transcribe.io.TranscriptionPage">
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <converters:BoolToTextConverter x:Key="BoolToTextConverter" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
     <ContentPage.Content>
         <Grid Margin="15"
               RowSpacing="5"
-              RowDefinitions="Auto, Auto, *">
+              RowDefinitions="Auto, Auto, Auto, *">
+            <!-- Model and file selection UI -->
             <Grid Grid.Row="0" RowDefinitions="Auto, Auto, Auto" RowSpacing="5">
                 <Grid ColumnSpacing="5" Grid.Row="0" ColumnDefinitions="50, *, Auto, Auto">
                     <Label VerticalOptions="Center" Text="{x:Static common:Common.ModelTextLabel}" />
@@ -24,39 +30,29 @@
                     <Button Grid.Column="2" Text="{x:Static common:Common.OpenFileButton}" Clicked="OpenFileButtonClicked" />
                 </Grid>
             </Grid>
-            <Grid Grid.Row="1" RowDefinitions="*" RowSpacing="5">
+
+            <!-- Live recording controls -->
+            <Grid Grid.Row="1" RowDefinitions="Auto" RowSpacing="5">
+                <Button Text="{Binding IsRecording, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Stop Recording|Start Recording'}"
+                        Command="{Binding ToggleRecordingCommand}" />
+                <ActivityIndicator IsRunning="{Binding IsRecording}" IsVisible="{Binding IsRecording}" VerticalOptions="Center" HorizontalOptions="Center" Margin="10"/>
+            </Grid>
+
+            <!-- File-based transcription start -->
+            <Grid Grid.Row="2" RowDefinitions="Auto" RowSpacing="5">
                 <Button Text="Start" Command="{Binding StartCommand}" />
             </Grid>
-            <xct:VirtualListView Background="Transparent" Grid.Row="2" Adapter="{Binding Subtitles}">
-                <xct:VirtualListView.ItemTemplate>
-                    <DataTemplate>
-                        <xct:VirtualViewCell>
-                            <Border
-                                Margin="5"
-                                Stroke="{AppThemeBinding Light=Black, Dark=White}"
-                                Background="Transparent"
-                                StrokeThickness="1"
-                                StrokeShape="RoundRectangle 5"
-                            >
-                                <Grid Margin="25" RowSpacing="2" RowDefinitions="*, Auto">
-                                    <Label FontAttributes="Bold" Text="{Binding Text}" />
-                                    <Label FontSize="Caption" Grid.Row="1" Text="{Binding Time}" />
-                                </Grid>
-                            </Border>
-                        </xct:VirtualViewCell>
-                    </DataTemplate>
-                </xct:VirtualListView.ItemTemplate>
-                <xct:VirtualListView.EmptyView>
-                    <Border StrokeThickness="1"
-                            BackgroundColor="#eb233d"
-                            Stroke="{AppThemeBinding Light=Black, Dark=White}"
-                            StrokeShape="RoundRectangle 5">
-                        <Image 
-                            Aspect="AspectFit"
-                            Source="logo.png"/>
-                    </Border>
-                </xct:VirtualListView.EmptyView>
-            </xct:VirtualListView>
+
+            <!-- Live transcription output -->
+            <ScrollView Grid.Row="3" Background="Transparent">
+                <Label
+                    Text="{Binding LiveTranscriptionText}"
+                    FontSize="16"
+                    Padding="10"
+                    LineBreakMode="WordWrap"
+                    VerticalOptions="Start"
+                    HorizontalOptions="Fill" />
+            </ScrollView>
         </Grid>
     </ContentPage.Content>
 </ContentPage>

@@ -29,8 +29,9 @@ namespace transcribe.io.Platforms.iOS
 
             engine = new AVAudioEngine();
             var input = engine.InputNode;
-            var format = new AVAudioFormat(16000, 1);
+            var format = input.GetBusOutputFormat(0); // Use hardware format (likely 48kHz, 1ch)
 
+            int bufferCount = 0;
             input.InstallTapOnBus(0, 1600, format, (buffer, when) =>
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -40,10 +41,16 @@ namespace transcribe.io.Platforms.iOS
                 }
 
                 var audioBuffer = buffer.AudioBufferList[0];
-                var data = new byte[buffer.FrameLength * 2];
+                int bytesPerSample = (int)(format.StreamDescription.BytesPerFrame / format.ChannelCount);
+                var data = new byte[buffer.FrameLength * bytesPerSample * format.ChannelCount];
                 System.Runtime.InteropServices.Marshal.Copy(audioBuffer.Data, data, 0, data.Length);
 
-                AudioBufferAvailable?.Invoke(this, data);
+                bufferCount++;
+                if (bufferCount % 10 == 0)
+                    Console.WriteLine($"[Microphone] Buffer #{bufferCount}, Length: {data.Length} bytes, SampleRate: {format.SampleRate}");
+
+                if (data.Length > 0)
+                    AudioBufferAvailable?.Invoke(this, data);
             });
 
             engine.Prepare();

@@ -8,6 +8,15 @@ namespace transcribe.io.Services;
 
 public interface IWhisperService
 {
+    // Start a live transcription session
+    Task StartLiveTranscriptionAsync(WhisperLanguage language, CancellationToken? cancellationToken = default);
+
+    // Process a single audio buffer (e.g., from microphone)
+    Task ProcessAudioBufferAsync(byte[] buffer, CancellationToken? cancellationToken = default);
+
+    // Stop the live transcription session
+    Task StopLiveTranscriptionAsync();
+    
     event EventHandler<OnNewSegmentEventArgs>? OnNewWhisperSegment;
 
     public Action<double>? OnProgress { get; set; }
