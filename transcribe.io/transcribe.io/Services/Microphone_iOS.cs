@@ -58,7 +58,6 @@ namespace transcribe.io.Platforms.iOS
                 {
                     unsafe
                     {
-                        // Get pointer to the first channel's float data
                         var floatChannelDataPtr = buffer.FloatChannelData;
                         if (floatChannelDataPtr == IntPtr.Zero)
                         {
@@ -66,21 +65,27 @@ namespace transcribe.io.Platforms.iOS
                         }
                         else
                         {
-                            float* floatBuffer = (float*)Marshal.ReadIntPtr(floatChannelDataPtr);
-                            int sampleCount = (int)buffer.FrameLength * (int)format.ChannelCount;
-                            data = new byte[sampleCount * 2];
+                            int sampleCount = (int)buffer.FrameLength;
+                            int numChannels = (int)format.ChannelCount;
+                            data = new byte[sampleCount * numChannels * 2];
+                            float** floatChannels = (float**)floatChannelDataPtr;
+
                             for (int i = 0; i < sampleCount; i++)
                             {
-                                short s = (short)Math.Clamp(floatBuffer[i] * 32767f, -32768, 32767);
-                                data[i * 2] = (byte)(s & 0xFF);
-                                data[i * 2 + 1] = (byte)((s >> 8) & 0xFF);
+                                for (int ch = 0; ch < numChannels; ch++)
+                                {
+                                    float sample = floatChannels[ch][i];
+                                    short s = (short)Math.Clamp(sample * 32767f, -32768, 32767);
+                                    int idx = (i * numChannels + ch) * 2;
+                                    data[idx] = (byte)(s & 0xFF);
+                                    data[idx + 1] = (byte)((s >> 8) & 0xFF);
+                                }
                             }
                         }
                     }
                 }
                 else
                 {
-                    // Use raw PCM data
                     int frameLength = (int)buffer.FrameLength;
                     int bytesPerFrame = (int)format.StreamDescription.BytesPerFrame;
                     int dataLength = frameLength * bytesPerFrame;

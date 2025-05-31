@@ -1,4 +1,10 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Drastic.Tools;
 using Drastic.ViewModels;
@@ -12,6 +18,7 @@ namespace transcribe.io.ViewModels;
 
 public class TranscriptionViewModel : BaseViewModel, IDisposable
 {
+    private readonly object audioBufferLock = new();
     private WhisperModelService modelService;
     private IWhisperService whisper;
     private double progress;
@@ -172,30 +179,20 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
 
     private async Task LocalFileParseAsync(string filepath, CancellationToken token)
     {
-        string? audioFile = string.Empty;
-
         if (!File.Exists(filepath))
-        {
             return;
-        }
 
         if (!DrasticWhisperFileExtensions.Supported.Contains(Path.GetExtension(filepath)))
-        {
             return;
-        }
 
         await this.ParseAsync(filepath, token);
     }
 
     private async Task ParseAsync(string filepath, CancellationToken token)
     {
-        string? audioFile = string.Empty;
-
-        audioFile = await this.transcodeService.ProcessFile(filepath);
+        var audioFile = await this.transcodeService.ProcessFile(filepath);
         if (string.IsNullOrEmpty(audioFile) || !File.Exists(audioFile))
-        {
             return;
-        }
 
         await this.PerformBusyAsyncTask(
             async () => { await this.GenerateCaptionsAsync(audioFile, token); },
@@ -210,7 +207,6 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
             async () =>
             {
                 this.whisper.InitModel(this.modelService.SelectedModel!.FileLocation, this.SelectedLanguage);
-
                 await this.whisper.ProcessAsync(audioFile, token);
             },
             "Generating Subtitles");
@@ -231,15 +227,6 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
                 LiveTranscriptionText += e.Text.Trim();
             }
         });
-
-        // Optionally, still add to subtitles if you want to keep the list:
-        // var item = new SrtSubtitleLine()
-        // { Start = e.Start, End = e.End, Text = e.Text.Trim(), LineNumber = this.subtitles.Count() + 1 };
-        // this.Dispatcher.Dispatch(() =>
-        // {
-        //     this.subtitles.Add(item);
-        //     this.Subtitles.InvalidateData();
-        // });
     }
 
     private void ModelServiceOnUpdatedSelectedModel(object? sender, EventArgs e)
@@ -255,15 +242,11 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
     private async Task ExportAsync(string filePath)
     {
         if (!this.subtitles.Any())
-        {
             return;
-        }
 
         var subtitle = new SrtSubtitle();
         foreach (var item in this.subtitles)
-        {
             subtitle.Lines.Add(item);
-        }
 
         await File.WriteAllTextAsync(filePath, subtitle.ToString());
     }
@@ -421,40 +404,43 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
         return monoBuffer;
     }
 
-    private async void OnAudioBufferAvailable(object? sender, byte[] buffer)
+    // --- Thread-safe, sequential buffer processing ---
+    private void OnAudioBufferAvailable(object? sender, byte[] buffer)
     {
-        Console.WriteLine($"[Microphone] Received audio buffer of {buffer?.Length ?? 0} bytes");
-        if (buffer != null && buffer.Length > 0)
+        int inputChannels = this.microphoneService?.Channels ?? 1;
+        int inputSampleRate = this.microphoneService?.SampleRate ?? 48000;
+        int bytesPerSample = 2;
+        int frameSize = inputChannels * bytesPerSample;
+
+        if (buffer.Length % frameSize != 0)
         {
-            Console.WriteLine("[Microphone] First 16 bytes: " + BitConverter.ToString(buffer.Take(16).ToArray()));
-            for (int i = 0; i < Math.Min(8, buffer.Length / 2); i++)
-            {
-                short sample = ReadInt16LE(buffer, i * 2);
-                Console.WriteLine($"[Microphone] Sample {i}: {sample}");
-            }
+            this.diagLogger?.LogWarning("Audio buffer misaligned: length {Length}, expected multiple of {FrameSize}", buffer.Length, frameSize);
+            return;
         }
 
-        rawAudioBuffer.AddRange(buffer);
-
-        try
+        lock (audioBufferLock)
         {
-            byte[] monoBuffer = buffer;
-            if (buffer.Length % 4 == 0)
-            {
-                monoBuffer = DownmixToMono(buffer);
-            }
+            rawAudioBuffer.AddRange(buffer);
 
-            var resampled = ResampleTo16kHz(monoBuffer, 48000, 16000);
+            byte[] monoBuffer = buffer;
+            if (inputChannels == 2)
+                monoBuffer = DownmixToMono(buffer);
+
+            var resampled = ResampleTo16kHz(monoBuffer, inputSampleRate, 16000);
             processedAudioBuffer.AddRange(resampled);
 
-            Console.WriteLine($"[Microphone] Processed buffer: raw {buffer.Length} bytes, mono {monoBuffer.Length} bytes, resampled {resampled.Length} bytes");
-
-            await this.whisper.ProcessAudioBufferAsync(resampled);
-        }
-        catch (Exception ex)
-        {
-            this.diagLogger?.LogError(ex, "Error processing audio buffer");
-            Console.WriteLine($"[Microphone] Exception: {ex}");
+            // Queue async processing to avoid blocking the audio thread
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await this.whisper.ProcessAudioBufferAsync(resampled);
+                }
+                catch (Exception ex)
+                {
+                    this.diagLogger?.LogError(ex, "Error processing audio buffer");
+                }
+            });
         }
     }
 }

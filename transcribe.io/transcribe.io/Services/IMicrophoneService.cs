@@ -28,5 +28,20 @@ namespace transcribe.io.Services
         /// Indicates if the microphone is currently recording.
         /// </summary>
         bool IsRecording { get; }
+
+        /// <summary>
+        /// Number of audio channels.
+        /// </summary>
+        int Channels { get; }
+
+        /// <summary>
+        /// Audio sample rate in Hz.
+        /// </summary>
+        int SampleRate { get; }
+
+        /// <summary>
+        /// Bits per audio sample.
+        /// </summary>
+        int BitsPerSample { get; }
     }
 }
