@@ -45,13 +45,14 @@
 
             <!-- Live transcription output -->
             <ScrollView Grid.Row="3" Background="Transparent">
-                <Label
+                <Editor
                     Text="{Binding LiveTranscriptionText}"
                     FontSize="16"
-                    Padding="10"
-                    LineBreakMode="WordWrap"
-                    VerticalOptions="Start"
-                    HorizontalOptions="Fill" />
+                    IsReadOnly="True"
+                    AutoSize="TextChanges"
+                    VerticalOptions="FillAndExpand"
+                    HorizontalOptions="Fill"
+                    x:Name="TranscriptionEditor"/>
             </ScrollView>
         </Grid>
     </ContentPage.Content>

@@ -213,19 +213,38 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
     }
 
     // --- Update: accumulate live transcription text ---
+    // Accumulate all unique segments by start time
+    private readonly List<WhisperSegmentData> allSegments = new();
+    private TimeSpan windowSize = TimeSpan.FromSeconds(10);
+    
     private void OnNewWhisperSegment(object? sender, OnNewSegmentEventArgs segment)
     {
         var e = segment.Segment;
-
-        // Accumulate text with a space between chunks
+        if (string.IsNullOrWhiteSpace(e.Text))
+            return;
+    
+        // Replace or add segment by start time
+        var existing = allSegments.FindIndex(s => s.Start == e.Start);
+        if (existing >= 0)
+            allSegments[existing] = e;
+        else
+            allSegments.Add(e);
+    
+        // Determine window split
+        var latestEnd = allSegments.Max(s => s.End);
+        var windowStart = latestEnd - windowSize;
+    
+        var fixedSegments = allSegments.Where(s => s.End <= windowStart).OrderBy(s => s.Start);
+        var liveSegments = allSegments.Where(s => s.End > windowStart).OrderBy(s => s.Start);
+    
+        string fixedText = string.Join(" ", fixedSegments.Select(s => s.Text.Trim()));
+        string liveText = string.Join(" ", liveSegments.Select(s => s.Text.Trim()));
+    
         this.Dispatcher.Dispatch(() =>
         {
-            if (!string.IsNullOrWhiteSpace(e.Text))
-            {
-                if (!string.IsNullOrEmpty(LiveTranscriptionText))
-                    LiveTranscriptionText += " ";
-                LiveTranscriptionText += e.Text.Trim();
-            }
+            LiveTranscriptionText = string.IsNullOrEmpty(fixedText)
+                ? liveText
+                : fixedText + " " + liveText;
         });
     }
 
@@ -289,21 +308,15 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
             await this.whisper.StopLiveTranscriptionAsync();
             IsRecording = false;
 
-            // Log buffer stats
-            Console.WriteLine($"[Microphone] Stopping recording. Raw buffer length: {rawAudioBuffer.Count} bytes, Processed buffer length: {processedAudioBuffer.Count} bytes");
-
-            // Log first 32 bytes of raw buffer
-            Console.WriteLine("[Microphone] First 32 bytes of raw buffer: " + BitConverter.ToString(rawAudioBuffer.Take(32).ToArray()));
-
             // Save raw buffer to WAV file (16-bit PCM, 48kHz, stereo as captured)
             string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "debug_microphone.wav");
             SaveWavFile(filePath, rawAudioBuffer.ToArray(), 48000, 2);
-            Console.WriteLine($"[Microphone] Saved raw audio to {filePath}");
 
             // Save processed buffer to WAV file (16kHz, mono)
             string processedPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "debug_microphone_processed.wav");
             SaveWavFile(processedPath, processedAudioBuffer.ToArray(), 16000, 1);
-            Console.WriteLine($"[Microphone] Saved processed audio to {processedPath}");
+            
+            Console.WriteLine($"[Microphone] Saved audio files to directory: {Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}");
 
             rawAudioBuffer.Clear();
             processedAudioBuffer.Clear();
@@ -312,7 +325,6 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
 
     private void SaveWavFile(string filePath, byte[] audioData, int sampleRate, int channels)
     {
-        Console.WriteLine($"[WAV] Saving file: {filePath}, Length: {audioData.Length}, SampleRate: {sampleRate}, Channels: {channels}");
         using var fs = new FileStream(filePath, FileMode.Create, FileAccess.Write);
         int byteRate = sampleRate * channels * 2;
         int blockAlign = channels * 2;
@@ -369,9 +381,6 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
         byte[] outputBuffer = new byte[outputShorts.Length * bytesPerSample];
         Buffer.BlockCopy(outputShorts, 0, outputBuffer, 0, outputBuffer.Length);
 
-        Console.WriteLine($"[Resample] Input samples: {inputSamples}, Output samples: {outputSamples}, Input length: {inputBuffer.Length}, Output length: {outputBuffer.Length}");
-        Console.WriteLine("[Resample] First 16 output samples: " + string.Join(", ", outputShorts.Take(16)));
-
         return outputBuffer;
     }
 
@@ -397,9 +406,6 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
         }
         byte[] monoBuffer = new byte[numSamples * bytesPerSample];
         Buffer.BlockCopy(monoSamples, 0, monoBuffer, 0, monoBuffer.Length);
-
-        Console.WriteLine($"[Downmix] Stereo input length: {inputBuffer.Length}, Mono output length: {monoBuffer.Length}");
-        Console.WriteLine("[Downmix] First 16 mono samples: " + string.Join(", ", monoSamples.Take(16)));
 
         return monoBuffer;
     }
