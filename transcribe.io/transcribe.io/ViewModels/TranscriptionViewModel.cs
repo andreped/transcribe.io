@@ -33,15 +33,21 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
     private YouTubeService youTubeService;
     private IMicrophoneService? microphoneService;
     private bool isRecording;
+    private bool isProcessing;
     private List<byte> rawAudioBuffer = new List<byte>();
     private List<byte> processedAudioBuffer = new List<byte>();
 
-    // --- Live transcription text property ---
     private string liveTranscriptionText = string.Empty;
     public string LiveTranscriptionText
     {
         get => liveTranscriptionText;
         set => SetProperty(ref liveTranscriptionText, value);
+    }
+
+    public bool IsProcessing
+    {
+        get => isProcessing;
+        set => SetProperty(ref isProcessing, value);
     }
 
     public TranscriptionViewModel(IServiceProvider services)
@@ -63,15 +69,15 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
         this.StartCommand = new AsyncCommand(this.StartAsync, () => this.canStart, this.Dispatcher, this.ErrorHandler);
         this.ExportCommand = new AsyncCommand<string>(this.ExportAsync, null, this.ErrorHandler);
         this.Subtitles = new VirtualListViewAdapter<ISubtitleLine>(this.subtitles);
+        this.ResetTranscriptionCommand = new Command(ResetTranscription);
 
-        // Inject IMicrophoneService if available
         this.microphoneService = services.GetService(typeof(IMicrophoneService)) as IMicrophoneService;
         if (this.microphoneService != null)
         {
             this.microphoneService.AudioBufferAvailable += this.OnAudioBufferAvailable;
         }
 
-        this.ToggleRecordingCommand = new Command(async () => await ToggleRecordingAsync());
+        this.ToggleRecordingCommand = new Command(async () => await ToggleRecordingAndTranscribeAsync(), () => !IsProcessing);
     }
 
     public TranscriptionViewModel(string srtText, IServiceProvider services)
@@ -118,9 +124,6 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
         set => this.SetProperty(ref this.progress, value);
     }
 
-    /// <summary>
-    /// Gets the subtitles.
-    /// </summary>
     public VirtualListViewAdapter<ISubtitleLine> Subtitles { get; }
 
     public bool IsRecording
@@ -130,11 +133,12 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
     }
 
     public ICommand ToggleRecordingCommand { get; }
+    
+    public ICommand ResetTranscriptionCommand { get; }
 
     public void OnProgress(double progress)
         => this.Progress = progress;
 
-    /// <inheritdoc/>
     public void Dispose()
     {
         this.Dispose(disposing: true);
@@ -157,6 +161,17 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
 
             this.disposedValue = true;
         }
+    }
+    
+    private void ResetTranscription()
+    {
+        LiveTranscriptionText = string.Empty;
+        subtitles.Clear();
+        allSegments.Clear();
+        committedUntil = TimeSpan.Zero;
+        rawAudioBuffer.Clear();
+        processedAudioBuffer.Clear();
+        OnPropertyChanged(nameof(Subtitles));
     }
 
     private async Task StartAsync()
@@ -212,47 +227,40 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
             "Generating Subtitles");
     }
 
-    // --- Update: accumulate live transcription text ---
-    // Maintain a list of committed segments
     private readonly List<WhisperSegmentData> allSegments = new();
     private TimeSpan committedUntil = TimeSpan.Zero;
-    
+
     private void OnNewWhisperSegment(object? sender, OnNewSegmentEventArgs segment)
     {
         var e = segment.Segment;
         if (string.IsNullOrWhiteSpace(e.Text))
             return;
-    
-        // Add or update segment in buffer
+
         var idx = allSegments.FindIndex(s => s.Start == e.Start && s.End == e.End);
         if (idx >= 0)
             allSegments[idx] = e;
         else
             allSegments.Add(e);
-    
-        // Order segments by start time
+
         var ordered = allSegments.OrderBy(s => s.Start).ToList();
-    
-        // Commit all finalized segments (all except the last one)
+
         var finalized = ordered.Take(ordered.Count - 1)
             .Where(s => s.End > committedUntil && s.Start >= committedUntil)
             .ToList();
-    
+
         if (finalized.Count > 0)
             committedUntil = finalized.Max(s => s.End);
-    
-        // Build the live feed: committed text + current hypothesis
+
         var committedText = string.Join(" ", ordered.Where(s => s.End <= committedUntil).Select(s => s.Text.Trim()));
         var hypothesisText = string.Join(" ", ordered.Where(s => s.End > committedUntil).Select(s => s.Text.Trim()));
         var liveText = string.IsNullOrEmpty(committedText) ? hypothesisText : $"{committedText} {hypothesisText}";
-    
+
         this.Dispatcher.Dispatch(() =>
         {
             LiveTranscriptionText = liveText;
         });
-    
-        // Trim old segments
-        allSegments.RemoveAll(s => s.End <= committedUntil - TimeSpan.FromSeconds(30));
+
+        //allSegments.RemoveAll(s => s.End <= committedUntil - TimeSpan.FromSeconds(30));
     }
 
     private void ModelServiceOnUpdatedSelectedModel(object? sender, EventArgs e)
@@ -279,15 +287,18 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
 
     // --- Microphone integration and live transcription ---
 
-    private async Task ToggleRecordingAsync()
+    private async Task ToggleRecordingAndTranscribeAsync()
     {
-        if (IsRecording)
+        if (IsProcessing)
+            return;
+
+        if (!IsRecording)
         {
-            await StopRecordingAsync();
+            await StartRecordingAsync();
         }
         else
         {
-            await StartRecordingAsync();
+            await StopRecordingAndTranscribeAsync();
         }
     }
 
@@ -295,25 +306,28 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
     {
         if (this.microphoneService != null && !this.microphoneService.IsRecording)
         {
-            // Initialize model for live transcription if needed
-            if (!this.whisper.IsInitialized)
+            if (IsRealTimeTranscription)
             {
-                this.whisper.InitModel(this.modelService.SelectedModel!.FileLocation, this.SelectedLanguage);
+                if (!this.whisper.IsInitialized)
+                {
+                    this.whisper.InitModel(this.modelService.SelectedModel!.FileLocation, this.SelectedLanguage);
+                }
+                await this.whisper.StartLiveTranscriptionAsync(this.SelectedLanguage, cancellationToken);
             }
-            await this.whisper.StartLiveTranscriptionAsync(this.SelectedLanguage, cancellationToken);
-            Console.WriteLine("[Microphone] StartLiveTranscriptionAsync completed");
             await this.microphoneService.StartCaptureAsync(cancellationToken);
             IsRecording = true;
         }
     }
 
-    public async Task StopRecordingAsync()
+    private async Task StopRecordingAndTranscribeAsync()
     {
+        IsRecording = false;
+        IsProcessing = true;
+
         if (this.microphoneService != null && this.microphoneService.IsRecording)
         {
             await this.microphoneService.StopCaptureAsync();
             await this.whisper.StopLiveTranscriptionAsync();
-            IsRecording = false;
 
             // Save raw buffer to WAV file (16-bit PCM, 48kHz, stereo as captured)
             string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "debug_microphone.wav");
@@ -322,13 +336,30 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
             // Save processed buffer to WAV file (16kHz, mono)
             string processedPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "debug_microphone_processed.wav");
             SaveWavFile(processedPath, processedAudioBuffer.ToArray(), 16000, 1);
-            
+
             Console.WriteLine($"[Microphone] Saved audio files to directory: {Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)}");
+
+            // If not real-time, transcribe the processed buffer
+            if (!IsRealTimeTranscription && processedAudioBuffer.Count > 0)
+            {
+                string tempPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "recorded.wav");
+                SaveWavFile(tempPath, processedAudioBuffer.ToArray(), 16000, 1);
+                await this.ParseAsync(tempPath, CancellationToken.None);
+            }
 
             rawAudioBuffer.Clear();
             processedAudioBuffer.Clear();
         }
+
+        IsProcessing = false;
     }
+
+    public bool IsRealTimeTranscription
+    {
+        get => isRealTimeTranscription;
+        set => SetProperty(ref isRealTimeTranscription, value);
+    }
+    private bool isRealTimeTranscription;
 
     private void SaveWavFile(string filePath, byte[] audioData, int sampleRate, int channels)
     {
@@ -338,22 +369,19 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
         int subChunk2Size = audioData.Length;
         int chunkSize = 36 + subChunk2Size;
 
-        // RIFF header
         fs.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
         fs.Write(BitConverter.GetBytes(chunkSize), 0, 4);
         fs.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
 
-        // fmt subchunk
         fs.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
-        fs.Write(BitConverter.GetBytes(16), 0, 4); // Subchunk1Size
-        fs.Write(BitConverter.GetBytes((short)1), 0, 2); // AudioFormat = PCM
+        fs.Write(BitConverter.GetBytes(16), 0, 4);
+        fs.Write(BitConverter.GetBytes((short)1), 0, 2);
         fs.Write(BitConverter.GetBytes((short)channels), 0, 2);
         fs.Write(BitConverter.GetBytes(sampleRate), 0, 4);
         fs.Write(BitConverter.GetBytes(byteRate), 0, 4);
         fs.Write(BitConverter.GetBytes((short)blockAlign), 0, 2);
-        fs.Write(BitConverter.GetBytes((short)16), 0, 2); // BitsPerSample
+        fs.Write(BitConverter.GetBytes((short)16), 0, 2);
 
-        // data subchunk
         fs.Write(System.Text.Encoding.ASCII.GetBytes("data"));
         fs.Write(BitConverter.GetBytes(subChunk2Size), 0, 4);
         fs.Write(audioData, 0, audioData.Length);
@@ -383,7 +411,6 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
                 output[i] = input[idx];
         }
 
-        // Convert back to 16-bit PCM
         short[] outputShorts = output.Select(f => (short)(Math.Clamp(f, -1f, 1f) * 32767)).ToArray();
         byte[] outputBuffer = new byte[outputShorts.Length * bytesPerSample];
         Buffer.BlockCopy(outputShorts, 0, outputBuffer, 0, outputBuffer.Length);
@@ -391,7 +418,6 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
         return outputBuffer;
     }
 
-    // Helper to always read 16-bit samples as little-endian
     private short ReadInt16LE(byte[] buffer, int offset)
     {
         if (BitConverter.IsLittleEndian)
@@ -403,7 +429,7 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
     private byte[] DownmixToMono(byte[] inputBuffer)
     {
         int bytesPerSample = 2;
-        int numSamples = inputBuffer.Length / bytesPerSample / 2; // 2 channels
+        int numSamples = inputBuffer.Length / bytesPerSample / 2;
         short[] monoSamples = new short[numSamples];
         for (int i = 0; i < numSamples; i++)
         {
@@ -417,7 +443,6 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
         return monoBuffer;
     }
 
-    // --- Thread-safe, sequential buffer processing ---
     private void OnAudioBufferAvailable(object? sender, byte[] buffer)
     {
         int inputChannels = this.microphoneService?.Channels ?? 1;
@@ -442,7 +467,6 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
             var resampled = ResampleTo16kHz(monoBuffer, inputSampleRate, 16000);
             processedAudioBuffer.AddRange(resampled);
 
-            // Queue async processing to avoid blocking the audio thread
             _ = Task.Run(async () =>
             {
                 try
