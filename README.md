@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="transcribe.io/transcribe.io/Resources/AppIcon/appicon.png" alt="transcribe.io app icon" width="128" height="128"/>
+</p>
+
 # transcribe.io
 
 **transcribe.io** is a cross-platform audio transcription app built with 
