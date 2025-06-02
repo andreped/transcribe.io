@@ -1,5 +1,5 @@
 <div style="display: flex; justify-content: center; align-items: center; margin: 0; padding: 0;">
-  <img src="assets/appicon-banner.png" alt="transcribe.io app icon" width="256" height="256" style="margin:0; padding:0; display:block;"/>
+  <img src="assets/appicon-banner.png" alt="transcribe.io app icon" width="256" height="256" style="display:block; margin:0 auto; padding:0;" />
 </div>
 
 **transcribe.io** is a cross-platform audio transcription app built with 
