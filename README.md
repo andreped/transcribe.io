@@ -1,8 +1,6 @@
-<p align="center">
-  <img src="assets/appicon.png" alt="transcribe.io app icon" width="128" height="128"/>
-</p>
-
-# transcribe.io
+<div style="display: flex; justify-content: center; align-items: center; margin: 0; padding: 0;">
+  <img src="assets/appicon-banner.png" alt="transcribe.io app icon" width="256" height="256" style="margin:0; padding:0; display:block;"/>
+</div>
 
 **transcribe.io** is a cross-platform audio transcription app built with 
 .NET MAUI and C#. It enables users to record audio or select audio files
