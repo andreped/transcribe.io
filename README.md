@@ -1,12 +1,9 @@
-<p align="center">
-  <img src="assets/appicon.png" alt="transcribe.io app icon" width="128" height="128"/>
-</p>
-
-# transcribe.io
+<div align="center">
+  <img src="assets/appicon-banner.png" alt="transcribe.io app icon" width="256" height="256"/>
+</div>
 
 **transcribe.io** is a cross-platform audio transcription app built with 
-.NET MAUI and C#. It enables users to record audio or select audio files
-and transcribe them using on-device machine learning models.
+.NET MAUI and C#. It enables users to record audio and transcribe them using on-device machine learning models.
 
 ## Features
 
@@ -37,7 +34,7 @@ and transcribe them using on-device machine learning models.
 - [x] Implement basic UI with on-device transcription support
 - [x] Add support for real-time transcription
 - [x] Support downloading and running different Whisper models
-- [ ] Add iOS deployment support
+- [x] Add iOS deployment support
 - [ ] Improve accuracy on real-time transcriptions
 - [ ] Add Android deployment support
 - [ ] Configure CI/CD for automated builds
