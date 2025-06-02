@@ -44,5 +44,7 @@ and transcribe them using on-device machine learning models.
 
 ## Acknowledgements
 
+I want to acknowledge [DIPS AS](https://www.dips.com/) for giving me the opportunity to develop this open-source software.  
+
 This project was heavily inspired by [MauiWhisper](https://github.com/drasticactions/MauiWhisper). 
 Real-time transcription was based on the work of [whisper_streaming](https://github.com/ufal/whisper_streaming).
