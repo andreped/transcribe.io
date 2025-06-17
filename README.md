@@ -35,8 +35,9 @@
 - [x] Add support for real-time transcription
 - [x] Support downloading and running different Whisper models
 - [x] Add iOS deployment support
+- [x] Add Android deployment support
+- [x] Add support to set transcription language
 - [ ] Improve accuracy on real-time transcriptions
-- [ ] Add Android deployment support
 - [ ] Configure CI/CD for automated builds
 
 ## Acknowledgements

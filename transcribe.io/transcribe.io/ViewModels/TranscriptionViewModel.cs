@@ -314,8 +314,16 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
                 }
                 await this.whisper.StartLiveTranscriptionAsync(this.SelectedLanguage, cancellationToken);
             }
-            await this.microphoneService.StartCaptureAsync(cancellationToken);
-            IsRecording = true;
+            IsRecording = true; // Set before awaiting
+            try
+            {
+                await this.microphoneService.StartCaptureAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                IsRecording = false; // Revert if failed
+                this.diagLogger?.LogError(ex, "Failed to start microphone capture");
+            }
         }
     }
 
