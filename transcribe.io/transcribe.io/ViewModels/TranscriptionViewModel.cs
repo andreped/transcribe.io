@@ -65,6 +65,7 @@ public class TranscriptionViewModel : BaseViewModel, IDisposable
         this.modelService.OnAvailableModelsUpdate += this.ModelServiceOnAvailableModelsUpdate;
         this.WhisperLanguages = WhisperLanguage.GenerateWhisperLangauages();
         this.selectedLanguage = this.WhisperLanguages[0];
+        this.selectedLanguage = this.WhisperLanguages.FirstOrDefault(l => l.LanguageCode == "no") ?? this.WhisperLanguages[0];
         this.cts = new CancellationTokenSource();
         this.StartCommand = new AsyncCommand(this.StartAsync, () => this.canStart, this.Dispatcher, this.ErrorHandler);
         this.ExportCommand = new AsyncCommand<string>(this.ExportAsync, null, this.ErrorHandler);
