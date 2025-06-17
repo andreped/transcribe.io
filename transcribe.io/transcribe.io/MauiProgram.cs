@@ -3,7 +3,10 @@ using transcribe.io.Services;
 using transcribe.io.ViewModels;
 using Microsoft.Extensions.Logging;
 #if IOS
-using transcribe.io.Platforms.iOS;
+using transcribe.io.Platforms.iOS.Services;
+#endif
+#if ANDROID
+using transcribe.io.Platforms.Android.Services;
 #endif
 
 namespace transcribe.io;
@@ -28,6 +31,9 @@ public static class MauiProgram
         builder.Services.AddSingleton<IWhisperService, DefaultWhisperService>();
 #if IOS
         builder.Services.AddSingleton<IMicrophoneService, MicrophoneService_iOS>();
+#endif
+#if ANDROID
+        builder.Services.AddSingleton<IMicrophoneService, MicrophoneService_Android>();
 #endif
 #if IOS || ANDROID
         builder.Services.AddSingleton<ITranscodeService, VlcTranscodeService>();
