@@ -10,7 +10,7 @@
         </ResourceDictionary>
     </ContentPage.Resources>
     <ContentPage.Content>
-        <Grid Margin="15" RowSpacing="10" RowDefinitions="Auto,Auto,Auto,*">
+        <Grid Margin="15" RowSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto,*">
             <!-- Model selection with download button (nested grid) -->
             <Grid Grid.Row="0" RowDefinitions="Auto,Auto" RowSpacing="5">
                 <Grid ColumnSpacing="5" Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
@@ -26,16 +26,28 @@
                             Clicked="OnDownloadModelClicked"/>
                 </Grid>
             </Grid>
+            
+            <!-- Language selection -->
+            <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0" Text="Set Original Language" VerticalOptions="Center"/>
+                <Picker Grid.Column="1"
+                        ItemsSource="{Binding WhisperLanguages}"
+                        SelectedItem="{Binding SelectedLanguage}"
+                        ItemDisplayBinding="{Binding Language}"
+                        WidthRequest="50"
+                        HorizontalOptions="End"
+                        VerticalOptions="Center"/>
+            </Grid>
 
             <!-- Real-time transcription toggle -->
-            <Grid Grid.Row="1" ColumnDefinitions="*,Auto">
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
                 <Label Text="Enable Real-Time Transcription" VerticalOptions="Center"/>
                 <Switch Grid.Column="1"
                         IsToggled="{Binding IsRealTimeTranscription, Mode=TwoWay}"/>
             </Grid>
 
             <!-- Recording/Transcribe/Reset controls -->
-            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+            <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
                 <Button Grid.Column="0"
                         Text="{Binding IsRecording, Converter={StaticResource BoolToTextConverter}, ConverterParameter='Stop Recording|Start Recording'}"
                         Command="{Binding ToggleRecordingCommand}"
@@ -53,7 +65,7 @@
             </Grid>
 
             <!-- Transcription output (visually distinct and scrollable) -->
-            <ScrollView Grid.Row="3" Background="Transparent" Padding="0">
+            <ScrollView Grid.Row="4" Background="Transparent" Padding="0">
                 <Frame Padding="10"
                        CornerRadius="8"
                        BorderColor="Gray"
