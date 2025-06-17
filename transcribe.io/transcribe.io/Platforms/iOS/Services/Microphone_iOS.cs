@@ -7,7 +7,7 @@ using Foundation;
 using transcribe.io.Services;
 using System.Runtime.InteropServices;
 
-namespace transcribe.io.Platforms.iOS
+namespace transcribe.io.Platforms.iOS.Services
 {
     public class MicrophoneService_iOS : IMicrophoneService
     {
