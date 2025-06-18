@@ -33,8 +33,9 @@
 - [x] Add iOS deployment support
 - [x] Add Android deployment support
 - [x] Add support to set transcription language
+- [x] Configure CI workflow for basic application testing
+- [ ] Configure CI/CD for automated binary builds
 - [ ] Improve accuracy on real-time transcriptions
-- [ ] Configure CI/CD for automated builds
 
 ## Acknowledgements
 
