@@ -12,9 +12,14 @@ on:
 jobs:
   build:
     runs-on: macos-latest
-
     steps:
     - uses: actions/checkout@v4
+
+    - name: Setup XCode
+    - uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '16.x.x'
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
