@@ -2,33 +2,29 @@
   <img src="assets/appicon-banner.png" alt="transcribe.io app icon" width="256" height="256"/>
 </div>
 
-**transcribe.io** is a cross-platform audio transcription app built with 
-.NET MAUI and C#. It enables users to record audio and transcribe them using on-device machine learning models.
+**transcribe.io** is a cross-platform mobile application built with 
+[.NET MAUI](https://dotnet.microsoft.com/en-us/apps/maui) and [C#](https://dotnet.microsoft.com/en-us/languages/csharp), enabling private, real-time transcription using on-device AI models.
 
 ## Features
 
-- Record audio directly from your microphone
-- Transcribe recorded audio and show transcription result
+- Record audio directly from your microphone on any mobile device
+- Transcribe recorded audio and show transcription result using on-device AI model
 - Real-time transcription mode (live display of recognized text)
 - Model selection and management (download and switch between models)
+- Auto-feature to automatically choose which language is spoken
 
 ## Tech Stack
 
-- **.NET MAUI** for cross-platform deployment (iOS, Android)
-- **C#** for application logic
-- Local ML model inference using Whisper.cpp for audio transcription
+- [.NET MAUI](https://dotnet.microsoft.com/en-us/apps/maui) for cross-platform deployment (iOS, Android)
+- [C#](https://dotnet.microsoft.com/en-us/languages/csharp) programming langugage for modern, type-safe application logic
+- On-device inference using [Whisper.net](https://github.com/sandrohanea/whisper.net)
+- Offering different Whisper variants from [Whisper.cpp](https://huggingface.co/ggerganov/whisper.cpp)
 
 ## Getting Started
 
 1. Clone the repository.
-2. Open the solution in your preferred IDE (e.g., JetBrains Rider, Visual Studio).
+2. Open the solution in your preferred IDE (e.g., JetBrains Rider, Visual Studio, VS Code).
 3. Build and run the app.
-
-## Disclaimers
-
-*Currently, only iOS is supported. Android support is a WIP.*
-
-*This project is a work in progress and welcomes contributions!*
 
 ## TODOs
 - [x] Implement basic UI with on-device transcription support
