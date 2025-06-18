@@ -35,6 +35,7 @@
 - [x] Add support to set transcription language
 - [x] Configure CI workflow for basic application testing
 - [ ] Configure CI/CD for automated binary builds
+- [ ] Implement unit and e2e tests with automation
 - [ ] Improve accuracy on real-time transcriptions
 
 ## Acknowledgements
